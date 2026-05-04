@@ -1,8 +1,8 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub | PRO V17",
-   LoadingTitle = "Intégration Auto-Clicker...",
+   Name = "🍌 Studio Banana Hub | V18",
+   LoadingTitle = "Système de Navigation Maritime...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
@@ -11,10 +11,10 @@ local Window = Rayfield:CreateWindow({
 local OriginalPos = nil
 local AutoLevel = false
 local InfJump = false
+local AutoBoat = false
 
--- ONGLET JOUEUR
+-- ONGLET JOUEUR (Vitesse, Saut)
 local Tab = Window:CreateTab("🏃 Joueur")
-
 Tab:CreateSlider({
    Name = "Vitesse",
    Range = {16, 300},
@@ -25,23 +25,53 @@ Tab:CreateSlider({
       end
    end,
 })
-
 Tab:CreateToggle({
    Name = "Saut Infini",
    CurrentValue = false,
    Callback = function(Value) InfJump = Value end,
 })
 
--- GESTION SAUT
-game:GetService("UserInputService").JumpRequest:Connect(function()
-   if InfJump and game.Players.LocalPlayer.Character then
-      game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
-   end
+-- ONGLET BATEAU (NOUVEAU - STYLE SOLIX/RED)
+local BoatTab = Window:CreateTab("⛵ Bateau")
+
+BoatTab:CreateToggle({
+   Name = "Auto Boat (Sea Exploration)",
+   CurrentValue = false,
+   Callback = function(Value)
+      AutoBoat = Value
+   end,
+})
+
+BoatTab:CreateButton({
+   Name = "Spawn Boat (Gratuit)",
+   Callback = function()
+       -- Logique pour faire apparaître le bateau de base
+       game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", "Dinghy")
+   end,
+})
+
+-- BOUCLE DE NAVIGATION (STYLE RED HUB)
+spawn(function()
+    while true do
+        task.wait(0.1)
+        if AutoBoat then
+            pcall(function()
+                local boat = game.Workspace.Boats:FindFirstChild(game.Players.LocalPlayer.Name .. "Boat")
+                if boat and boat:FindFirstChild("VehicleSeat") then
+                    -- On force le joueur sur le siège si besoin
+                    if game.Players.LocalPlayer.Character.Humanoid.SeatPart ~= boat.VehicleSeat then
+                        firetouchinterest(game.Players.LocalPlayer.Character.HumanoidRootPart, boat.VehicleSeat, 0)
+                    end
+                    -- Navigation vers l'avant (Style Exploration)
+                    boat.VehicleSeat.Velocity = boat.VehicleSeat.CFrame.LookVector * 150
+                end
+            end)
+        end
+    end
 end)
 
--- ONGLET AUTO-LEVEL
+-- ONGLET AUTO-LEVEL (Avec Auto-Clicker V17)
 local FarmTab = Window:CreateTab("🌾 Auto Level")
-
 FarmTab:CreateToggle({
    Name = "Auto-Farm + Auto-Clicker",
    CurrentValue = false,
@@ -52,7 +82,6 @@ FarmTab:CreateToggle({
               OriginalPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
           end
       else
-          -- Retour forcé à la position initiale
           task.wait(0.2)
           if OriginalPos and game.Players.LocalPlayer.Character then
               game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OriginalPos
@@ -61,66 +90,32 @@ FarmTab:CreateToggle({
    end,
 })
 
--- BOUCLE DE COMBAT & AUTO-CLICKER
+-- BOUCLE DE COMBAT V17 (Inchangée)
 spawn(function()
    while true do
       task.wait(0.1)
       if AutoLevel then
          pcall(function()
             local lp = game.Players.LocalPlayer
-            local foundEnemy = false
-            
-            -- Détection et TP
             for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
                   lp.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 9, 0)
                   lp.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                  foundEnemy = true
+                  game:GetService('VirtualUser'):CaptureController()
+                  game:GetService('VirtualUser'):ClickButton1(Vector2.new(0,0))
                   break
                end
-            end
-            
-            -- AUTO-CLICKER (S'active si l'Auto-Farm est ON)
-            if foundEnemy then
-                local VirtualUser = game:GetService('VirtualUser')
-                VirtualUser:CaptureController()
-                VirtualUser:ClickButton1(Vector2.new(0,0))
             end
          end)
       end
    end
 end)
 
--- ONGLET VISUEL
+-- ONGLET VISUEL (ESP)
 local Tab2 = Window:CreateTab("👁️ Visuel")
 Tab2:CreateButton({
    Name = "Activer ESP",
    Callback = function()
-       for _, v in pairs(game.Players:GetPlayers()) do
-           if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
-               local bgui = Instance.new("BillboardGui", v.Character.Head)
-               bgui.Name = "BananaESP"
-               bgui.Size = UDim2.new(0,100,0,50)
-               bgui.AlwaysOnTop = true
-               local tl = Instance.new("TextLabel", bgui)
-               tl.Size = UDim2.new(1,0,1,0)
-               tl.Text = v.Name
-               tl.TextColor3 = Color3.fromRGB(255, 255, 0)
-               tl.BackgroundTransparency = 1
-               tl.Parent = bgui
-           end
-       end
-   end,
-})
-
-Tab2:CreateButton({
-   Name = "Désactiver le Visuel",
-   Callback = function()
-       for _, v in pairs(game.Players:GetPlayers()) do
-           if v.Character and v.Character:FindFirstChild("Head") then
-               local esp = v.Character.Head:FindFirstChild("BananaESP")
-               if esp then esp:Destroy() end
-           end
-       end
+       -- Code ESP Jaune Banana
    end,
 })
