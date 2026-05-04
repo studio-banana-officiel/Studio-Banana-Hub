@@ -1,8 +1,8 @@
--- STUDIO BANANA HUB V2
+-- STUDIO BANANA HUB V3 - EDITION BLOX FRUITS
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub",
+   Name = "🍌 Studio Banana Hub | Blox Fruits",
    LoadingTitle = "Chargement du projet viral...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = {
@@ -12,8 +12,8 @@ local Window = Rayfield:CreateWindow({
    }
 })
 
--- ONGLET MOUVEMENT
-local Tab = Window:CreateTab("🏃 Joueur", 4483362458) -- Icône de course
+-- ONGLET MOUVEMENT (Déjà fonctionnel)
+local Tab = Window:CreateTab("🏃 Joueur", 4483362458)
 
 local Slider = Tab:CreateSlider({
    Name = "Vitesse de marche",
@@ -27,19 +27,48 @@ local Slider = Tab:CreateSlider({
    end,
 })
 
-local Slider2 = Tab:CreateSlider({
-   Name = "Puissance de saut",
-   Range = {50, 500},
-   Increment = 1,
-   Suffix = " Jump",
-   CurrentValue = 150,
-   Flag = "Slider2",
+-- NOUVEAU : INFINITE JUMP (Pour ne jamais tomber dans l'eau)
+local InfiniteJumpEnabled = false
+Tab:CreateToggle({
+   Name = "Saut Infini",
+   CurrentValue = false,
+   Flag = "InfJump",
    Callback = function(Value)
-      game.Players.LocalPlayer.Character.Humanoid.JumpPower = Value
+      InfiniteJumpEnabled = Value
    end,
 })
 
--- ONGLET VISUEL
+game:GetService("UserInputService").JumpRequest:Connect(function()
+   if InfiniteJumpEnabled then
+      game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+   end
+end)
+
+-- ONGLET COMBAT (Pour Farmer)
+local CombatTab = Window:CreateTab("⚔️ Combat", 4483362458)
+
+local AutoClickEnabled = false
+CombatTab:CreateToggle({
+   Name = "Auto-Click (Farm)",
+   CurrentValue = false,
+   Flag = "AutoClick",
+   Callback = function(Value)
+      AutoClickEnabled = Value
+   end,
+})
+
+-- Boucle pour l'Auto-Click
+spawn(function()
+   while wait() do
+      if AutoClickEnabled then
+         local VirtualUser = game:GetService('VirtualUser')
+         VirtualUser:CaptureController()
+         VirtualUser:ClickButton1(Vector2.new(0,0))
+      end
+   end
+end)
+
+-- ONGLET VISUEL (ESP)
 local Tab2 = Window:CreateTab("👁️ Visuel", 4483362458)
 
 Tab2:CreateButton({
@@ -63,7 +92,7 @@ Tab2:CreateButton({
 
 Rayfield:Notify({
    Title = "Studio Banana",
-   Content = "Hub prêt pour le tournage !",
+   Content = "Hub Blox Fruits prêt !",
    Duration = 5,
    Image = 4483362458,
 })
