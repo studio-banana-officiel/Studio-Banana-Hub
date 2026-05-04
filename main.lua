@@ -1,13 +1,13 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub | Pro Farm",
-   LoadingTitle = "Optimisation style Solix...",
+   Name = "🍌 Studio Banana Hub | Ultimate",
+   LoadingTitle = "Correction des erreurs en cours...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
 
--- ONGLET JOUEUR (Vitesse + Saut Infini)
+-- ONGLET JOUEUR
 local Tab = Window:CreateTab("🏃 Joueur")
 
 Tab:CreateSlider({
@@ -16,62 +16,66 @@ Tab:CreateSlider({
    Increment = 1,
    CurrentValue = 100,
    Callback = function(Value)
-      game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      if game.Players.LocalPlayer.Character then
+         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      end
    end,
 })
 
 local InfJump = false
 Tab:CreateToggle({
-   Name = "Activer le Saut Infini",
+   Name = "Saut Infini (Bouton)",
    CurrentValue = false,
    Callback = function(Value)
       InfJump = Value
    end,
 })
 
--- Script Technique du Saut
+-- Fix pour le Saut Infini (évite les erreurs de l'image image_b89248.png)
 game:GetService("UserInputService").JumpRequest:Connect(function()
-   if InfJump then
+   if InfJump and game.Players.LocalPlayer.Character then
       game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
    end
 end)
 
--- ONGLET AUTO-FARM (Inspiration Solix)
-local FarmTab = Window:CreateTab("🌾 Auto Farm")
+-- ONGLET AUTO-LEVEL (STYLE SOLIX)
+local FarmTab = Window:CreateTab("🌾 Auto Level")
 
-local AutoFarm = false
+local AutoLevel = false
 FarmTab:CreateToggle({
-   Name = "Auto-Farm (Level + Attaque)",
+   Name = "Activer Auto-Farm (Télépéportation)",
    CurrentValue = false,
    Callback = function(Value)
-      AutoFarm = Value
+      AutoLevel = Value
    end,
 })
 
--- Système de Farm Intelligent
+-- Boucle de Farm avec Téléportation
 spawn(function()
    while true do
-      task.wait()
-      if AutoFarm then
+      task.wait(0.1)
+      if AutoLevel then
          pcall(function()
-            local player = game.Players.LocalPlayer
+            local lp = game.Players.LocalPlayer
+            -- On cherche un ennemi vivant
             for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    -- Téléportation au-dessus de l'ennemi (Comme Solix)
-                    player.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
-                    
-                    -- Attaque automatique
-                    local VirtualUser = game:GetService('VirtualUser')
-                    VirtualUser:CaptureController()
-                    VirtualUser:ClickButton1(Vector2.new(0,0))
-                end
+               if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
+                  -- Téléportation derrière l'ennemi
+                  lp.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
+                  
+                  -- Attaque automatique
+                  local VirtualUser = game:GetService('VirtualUser')
+                  VirtualUser:CaptureController()
+                  VirtualUser:ClickButton1(Vector2.new(0,0))
+                  break -- On se concentre sur une seule cible à la fois
+               end
             end
          end)
       end
    end
 end)
 
--- ONGLET VISUEL (Avec Option de Nettoyage)
+-- ONGLET VISUEL
 local Tab2 = Window:CreateTab("👁️ Visuel")
 
 Tab2:CreateButton({
@@ -88,6 +92,7 @@ Tab2:CreateButton({
                tl.Text = v.Name
                tl.TextColor3 = Color3.fromRGB(255, 255, 0)
                tl.BackgroundTransparency = 1
+               tl.Parent = bgui
            end
        end
    end,
