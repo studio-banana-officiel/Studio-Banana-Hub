@@ -1,18 +1,17 @@
--- STUDIO BANANA HUB V6
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
    Name = "🍌 Studio Banana Hub | Blox Fruits",
-   LoadingTitle = "Projet Viral en cours...",
+   LoadingTitle = "Projet Viral : Studio Banana",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
 
--- ONGLET JOUEUR (Vitesse + Saut Infini)
+-- ONGLET JOUEUR (Vitesse + Saut)
 local Tab = Window:CreateTab("🏃 Joueur")
 
 Tab:CreateSlider({
-   Name = "Vitesse de marche",
+   Name = "Vitesse",
    Range = {16, 300},
    Increment = 1,
    CurrentValue = 100,
@@ -23,39 +22,39 @@ Tab:CreateSlider({
 
 local InfJump = false
 Tab:CreateToggle({
-   Name = "Saut Infini (Activé)",
+   Name = "Saut Infini",
    CurrentValue = false,
    Callback = function(Value)
       InfJump = Value
    end,
 })
 
--- Script pour que le Saut Infini fonctionne
+-- Script Technique du Saut
 game:GetService("UserInputService").JumpRequest:Connect(function()
    if InfJump then
       game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
    end
 end)
 
--- ONGLET AUTO-FARM (Amélioré)
-local FarmTab = Window:CreateTab("🌾 Auto Farm")
+-- ONGLET AUTO-LEVEL (Attaque forcée)
+local FarmTab = Window:CreateTab("🌾 Auto Level")
 
 local AutoLevel = false
 FarmTab:CreateToggle({
-   Name = "Auto-Level (Attaque Automatique)",
+   Name = "Activer Auto-Farm",
    CurrentValue = false,
    Callback = function(Value)
       AutoLevel = Value
    end,
 })
 
--- Boucle de Farm ultra-rapide
+-- Boucle Auto-Level
 spawn(function()
    while true do
       task.wait(0.1)
       if AutoLevel then
          pcall(function()
-            -- Force l'attaque même sans cible précise pour farmer autour de toi
+            -- Simule un clic pour attaquer avec ton arme équipée
             local VirtualUser = game:GetService('VirtualUser')
             VirtualUser:CaptureController()
             VirtualUser:ClickButton1(Vector2.new(0,0))
@@ -64,10 +63,11 @@ spawn(function()
    end
 end)
 
--- ONGLET VISUEL
+-- ONGLET VISUEL (Avec bouton Désactiver)
 local Tab2 = Window:CreateTab("👁️ Visuel")
+
 Tab2:CreateButton({
-   Name = "Activer ESP",
+   Name = "Activer ESP (Noms)",
    Callback = function()
        for _, v in pairs(game.Players:GetPlayers()) do
            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
@@ -80,6 +80,18 @@ Tab2:CreateButton({
                tl.Text = v.Name
                tl.TextColor3 = Color3.fromRGB(255, 255, 0)
                tl.BackgroundTransparency = 1
+           end
+       end
+   end,
+})
+
+Tab2:CreateButton({
+   Name = "Désactiver le Visuel",
+   Callback = function()
+       for _, v in pairs(game.Players:GetPlayers()) do
+           if v.Character and v.Character:FindFirstChild("Head") then
+               local esp = v.Character.Head:FindFirstChild("BananaESP")
+               if esp then esp:Destroy() end
            end
        end
    end,
