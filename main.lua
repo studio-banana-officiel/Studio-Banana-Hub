@@ -1,10 +1,8 @@
--- STUDIO BANANA HUB V11 - ANTI-CRASH EDITION
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- FIX : Supprime les erreurs système qui polluent la console (Vu sur ton image)
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub | PRO",
-   LoadingTitle = "Nettoyage des erreurs ReplicatedStorage...",
+   Name = "🍌 Studio Banana Hub | PRO V12",
+   LoadingTitle = "Optimisation Cimetière...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
@@ -29,7 +27,7 @@ Tab:CreateToggle({
    Name = "Saut Infini",
    CurrentValue = false,
    Callback = function(Value)
-      InfJump = Value
+      InfJump = Value -- Désactive ou active le saut ici
    end,
 })
 
@@ -39,31 +37,32 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
    end
 end)
 
--- ONGLET AUTO-LEVEL (STAY IN AIR + NO CLIP)
+-- ONGLET AUTO-LEVEL (MODE CIMETIÈRE)
 local FarmTab = Window:CreateTab("🌾 Auto Farm")
 
 local AutoLevel = false
 FarmTab:CreateToggle({
-   Name = "Auto-Farm (Aérien + Sécurisé)",
+   Name = "Auto-Farm (Stay Above)",
    CurrentValue = false,
    Callback = function(Value)
       AutoLevel = Value
    end,
 })
 
--- Boucle de Farm style Solix (Reste en l'air)
+-- Boucle de Farm style Solix (Correction Position)
 spawn(function()
    while true do
-      task.wait(0.05) -- Plus rapide pour tuer plus vite
+      task.wait(0.05)
       if AutoLevel then
          pcall(function()
             local lp = game.Players.LocalPlayer
+            -- On cherche les ennemis (Squelettes, etc.)
             for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                  -- POSITION FANTOME : 6 studs au-dessus pour ne pas toucher le sol
-                  lp.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 6, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+                  -- POSITION : On se fixe à 7 studs au-dessus d'eux
+                  lp.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
                   
-                  -- ANTI-GRAVITÉ : Empêche de tomber
+                  -- ANTI-CHUTE : On bloque la gravité pour ne pas glisser au sol
                   lp.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
                   
                   -- ATTAQUE
@@ -90,7 +89,6 @@ Tab2:CreateButton({
                bgui.Size = UDim2.new(0,100,0,50)
                bgui.AlwaysOnTop = true
                local tl = Instance.new("TextLabel", bgui)
-               tl.Size = UDim2.new(1,0,1,0)
                tl.Text = v.Name
                tl.TextColor3 = Color3.fromRGB(255, 255, 0)
                tl.BackgroundTransparency = 1
