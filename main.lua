@@ -1,20 +1,27 @@
--- Version sécurisée pour Studio Banana
-local player = game.Players.LocalPlayer
-local char = player.Character or player.CharacterAdded:Wait()
+print("--- CHARGEMENT STUDIO BANANA HUB ---")
 
-print("Tentative d'activation Studio Banana...")
-
--- Notification pour confirmer que le bouton a été pressé
+-- 1. Notification pour confirmer que ça marche
 game.StarterGui:SetCore("SendNotification", {
     Title = "Studio Banana",
-    Text = "Chargement en cours...",
-    Duration = 3
+    Text = "Vitesse et Saut activés !",
+    Duration = 5
 })
 
--- On enveloppe le code dans un pcall (Protective Call) pour éviter les erreurs
-pcall(function()
-    char.Humanoid.WalkSpeed = 100
-    char.Humanoid.JumpPower = 150
+-- 2. Fonction pour que ça marche même après une mort
+local player = game.Players.LocalPlayer
+player.CharacterAppearanceLoaded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    hum.WalkSpeed = 100
+    hum.JumpPower = 150
 end)
 
-print("Studio Banana est prêt !")
+-- 3. Activation immédiate
+if player.Character then
+    local hum = player.Character:FindFirstChild("Humanoid")
+    if hum then
+        hum.WalkSpeed = 100
+        hum.JumpPower = 150
+    end
+end
+
+print("--- STUDIO BANANA EST OPÉRATIONNEL ---")
