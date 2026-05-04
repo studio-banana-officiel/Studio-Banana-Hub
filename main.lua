@@ -1,18 +1,18 @@
--- STUDIO BANANA HUB V5 - AUTO-FARM & MOVEMENT
+-- STUDIO BANANA HUB V6
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub",
-   LoadingTitle = "Projet Viral : Blox Fruits",
+   Name = "🍌 Studio Banana Hub | Blox Fruits",
+   LoadingTitle = "Projet Viral en cours...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
 
--- ONGLET MOUVEMENT (REMIS ET AMÉLIORÉ)
+-- ONGLET JOUEUR (Vitesse + Saut Infini)
 local Tab = Window:CreateTab("🏃 Joueur")
 
 Tab:CreateSlider({
-   Name = "Vitesse",
+   Name = "Vitesse de marche",
    Range = {16, 300},
    Increment = 1,
    CurrentValue = 100,
@@ -23,49 +23,64 @@ Tab:CreateSlider({
 
 local InfJump = false
 Tab:CreateToggle({
-   Name = "Saut Infini",
+   Name = "Saut Infini (Activé)",
    CurrentValue = false,
    Callback = function(Value)
       InfJump = Value
    end,
 })
 
--- Système de Saut Infini
+-- Script pour que le Saut Infini fonctionne
 game:GetService("UserInputService").JumpRequest:Connect(function()
    if InfJump then
       game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
    end
 end)
 
--- ONGLET AUTO-LEVEL
-local FarmTab = Window:CreateTab("🌾 Auto Level")
+-- ONGLET AUTO-FARM (Amélioré)
+local FarmTab = Window:CreateTab("🌾 Auto Farm")
 
 local AutoLevel = false
 FarmTab:CreateToggle({
-   Name = "Activer Auto-Farm",
+   Name = "Auto-Level (Attaque Automatique)",
    CurrentValue = false,
    Callback = function(Value)
       AutoLevel = Value
    end,
 })
 
--- BOUCLE DE FARM AMÉLIORÉE
+-- Boucle de Farm ultra-rapide
 spawn(function()
    while true do
       task.wait(0.1)
       if AutoLevel then
          pcall(function()
-            local player = game.Players.LocalPlayer
-            local character = player.Character
-            -- On cherche les ennemis
-            for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                    -- Cette ligne force l'attaque si l'ennemi est là
-                    local VirtualUser = game:GetService('VirtualUser')
-                    VirtualUser:Button1Down(Vector2.new(0,0), game.Workspace.CurrentCamera.CFrame)
-                end
-            end
+            -- Force l'attaque même sans cible précise pour farmer autour de toi
+            local VirtualUser = game:GetService('VirtualUser')
+            VirtualUser:CaptureController()
+            VirtualUser:ClickButton1(Vector2.new(0,0))
          end)
       end
    end
 end)
+
+-- ONGLET VISUEL
+local Tab2 = Window:CreateTab("👁️ Visuel")
+Tab2:CreateButton({
+   Name = "Activer ESP",
+   Callback = function()
+       for _, v in pairs(game.Players:GetPlayers()) do
+           if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
+               local bgui = Instance.new("BillboardGui", v.Character.Head)
+               bgui.Name = "BananaESP"
+               bgui.Size = UDim2.new(0,100,0,50)
+               bgui.AlwaysOnTop = true
+               local tl = Instance.new("TextLabel", bgui)
+               tl.Size = UDim2.new(1,0,1,0)
+               tl.Text = v.Name
+               tl.TextColor3 = Color3.fromRGB(255, 255, 0)
+               tl.BackgroundTransparency = 1
+           end
+       end
+   end,
+})
