@@ -1,4 +1,5 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
 local Window = Rayfield:CreateWindow({
    Name = "🍌 Studio Banana Hub | V23",
    LoadingTitle = "Finalisation du Script...",
@@ -38,7 +39,7 @@ Tab:CreateToggle({
    end,
 })
 
--- LOGIQUE SAUT INFINI AMÉLIORÉE
+-- LOGIQUE SAUT INFINI CORRIGÉE
 game:GetService("UserInputService").JumpRequest:Connect(function()
    if InfJump then
       local char = game.Players.LocalPlayer.Character
@@ -49,33 +50,29 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
 end)
 
 -- ==========================================
--- ⛵ ONGLET BATEAU (SÉLECTION + FIX)
+-- ⛵ ONGLET BATEAU
 -- ==========================================
 local BoatTab = Window:CreateTab("⛵ Bateau")
 
 BoatTab:CreateDropdown({
-   Name = "Choisir le Bateau",
+   Name = "1. Choisir le Bateau",
    Options = {"Dinghy", "Sloop", "Brigantine", "Grand Enforcer"},
    CurrentOption = {"Dinghy"},
    MultipleOptions = false,
-   Callback = function(Option) 
-      SelectedBoat = Option[1] 
-   end,
+   Callback = function(Option) SelectedBoat = Option[1] end,
 })
 
 BoatTab:CreateButton({
-   Name = "Faire apparaître le bateau",
+   Name = "2. Faire apparaître le bateau",
    Callback = function()
        game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", SelectedBoat)
    end,
 })
 
 BoatTab:CreateToggle({
-   Name = "Navigation Auto (Force Mode)",
+   Name = "3. Navigation Auto",
    CurrentValue = false,
-   Callback = function(Value) 
-      AutoBoat = Value 
-   end,
+   Callback = function(Value) AutoBoat = Value end,
 })
 
 -- ==========================================
@@ -105,7 +102,7 @@ FarmTab:CreateToggle({
 local Tab2 = Window:CreateTab("👁️ Visuel")
 
 Tab2:CreateButton({
-   Name = "Activer ESP (Jaune)",
+   Name = "Activer ESP",
    Callback = function()
        for _, v in pairs(game.Players:GetPlayers()) do
            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
@@ -139,8 +136,10 @@ Tab2:CreateButton({
 })
 
 -- ==========================================
--- BOUCLE NAVIGATION BATEAU (ARRIÈRE-PLAN)
+-- BOUCLES DE FONCTIONNEMENT
 -- ==========================================
+
+-- NAVIGATION BATEAU
 spawn(function()
     while true do task.wait(0.5)
         if AutoBoat then
@@ -163,7 +162,7 @@ spawn(function()
     end
 end)
 
--- BOUCLE AUTO-FARM (ARRIÈRE-PLAN)
+-- AUTO-FARM
 spawn(function()
    while true do task.wait(0.1)
       if AutoLevel then
