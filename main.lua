@@ -1,3 +1,4 @@
+-- Studio Banana Hub | V23 (corrigé & amélioré + Auto-Fruit)
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
@@ -6,6 +7,13 @@ local Window = Rayfield:CreateWindow({
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
+
+-- Services
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 -- VARIABLES
 local OriginalPos = nil
@@ -18,6 +26,14 @@ local BoatSpeed = 150
 local ClickSpeed = 0.1
 local AutoAttack = false
 
+-- Auto-Fruit variables
+local AutoFruit = false
+local FruitRange = 200        -- portée max de recherche (studs)
+local FruitPickupDelay = 0.6  -- délai entre tentatives en secondes
+
+-- Utility
+local lp = Players.LocalPlayer
+
 -- ==========================================
 -- 🏃 ONGLET JOUEUR
 -- ==========================================
@@ -28,8 +44,8 @@ Tab:CreateSlider({
    Range = {16, 300},
    CurrentValue = 16,
    Callback = function(Value)
-      if game.Players.LocalPlayer.Character then
-         game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = Value
+      if lp and lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") then
+         lp.Character:FindFirstChildOfClass("Humanoid").WalkSpeed = Value
       end
    end,
 })
@@ -37,17 +53,20 @@ Tab:CreateSlider({
 Tab:CreateToggle({
    Name = "Saut Infini",
    CurrentValue = false,
-   Callback = function(Value) 
-      InfJump = Value 
+   Callback = function(Value)
+      InfJump = Value
    end,
 })
 
 -- LOGIQUE SAUT INFINI
-game:GetService("UserInputService").JumpRequest:Connect(function()
+UserInputService.JumpRequest:Connect(function()
    if InfJump then
-      local char = game.Players.LocalPlayer.Character
-      if char and char:FindFirstChildOfClass("Humanoid") then
-         char:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
+      local char = lp and lp.Character
+      if char then
+         local hum = char:FindFirstChildOfClass("Humanoid")
+         if hum and hum.Health > 0 then
+            hum:ChangeState(Enum.HumanoidStateType.Jumping)
+         end
       end
    end
 end)
@@ -61,8 +80,8 @@ BoatTab:CreateDropdown({
    Name = "Choisir le Bateau",
    Options = {"Dinghy", "Sloop", "Brigantine", "Grand Enforcer"},
    CurrentOption = "Dinghy",
-   Callback = function(Option) 
-      SelectedBoat = Option 
+   Callback = function(Option)
+      SelectedBoat = Option
    end,
 })
 
@@ -70,7 +89,9 @@ BoatTab:CreateButton({
    Name = "Faire apparaître le bateau",
    Callback = function()
        pcall(function()
-           game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", SelectedBoat)
+           if ReplicatedStorage:FindFirstChild("Remotes") and ReplicatedStorage.Remotes:FindFirstChild("CommF_") then
+               ReplicatedStorage.Remotes.CommF_:InvokeServer("BuyBoat", SelectedBoat)
+           end
        end)
    end,
 })
@@ -78,8 +99,8 @@ BoatTab:CreateButton({
 BoatTab:CreateToggle({
    Name = "Navigation Auto",
    CurrentValue = false,
-   Callback = function(Value) 
-      AutoBoat = Value 
+   Callback = function(Value)
+      AutoBoat = Value
    end,
 })
 
@@ -103,13 +124,14 @@ CombatTab:CreateToggle({
    Callback = function(Value)
       AutoLevel = Value
       if Value then
-          if game.Players.LocalPlayer.Character then
-              OriginalPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+          if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+              OriginalPos = lp.Character.HumanoidRootPart.CFrame
           end
       else
           task.wait(0.2)
-          if OriginalPos and game.Players.LocalPlayer.Character then 
-              game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OriginalPos 
+          if OriginalPos and lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+              lp.Character.HumanoidRootPart.CFrame = OriginalPos
+              OriginalPos = nil
           end
       end
    end,
@@ -118,8 +140,8 @@ CombatTab:CreateToggle({
 CombatTab:CreateToggle({
    Name = "Auto-Attack (M1)",
    CurrentValue = false,
-   Callback = function(Value) 
-      AutoAttack = Value 
+   Callback = function(Value)
+      AutoAttack = Value
       AutoClick = Value
    end,
 })
@@ -137,28 +159,49 @@ CombatTab:CreateSlider({
 -- 👁️ ONGLET VISUEL
 -- ==========================================
 local VisualTab = Window:CreateTab("👁️ Visuel")
+local ESP_NAME = "BananaESP_v23"
+
+local function createESPForPlayer(player)
+   if not player or not player.Character then return end
+   local head = player.Character:FindFirstChild("Head")
+   if not head or head:FindFirstChild(ESP_NAME) then return end
+
+   local bgui = Instance.new("BillboardGui")
+   bgui.Name = ESP_NAME
+   bgui.Size = UDim2.new(0, 120, 0, 40)
+   bgui.MaxDistance = 500
+   bgui.AlwaysOnTop = true
+   bgui.StudsOffset = Vector3.new(0, 1.5, 0)
+   bgui.Parent = head
+
+   local tl = Instance.new("TextLabel", bgui)
+   tl.Size = UDim2.new(1, 0, 1, 0)
+   tl.BackgroundTransparency = 1
+   tl.Text = player.Name
+   tl.TextColor3 = Color3.fromRGB(255, 255, 0)
+   tl.Font = Enum.Font.GothamBold
+   tl.TextSize = 14
+end
+
+local function removeESPForPlayer(player)
+   if not player or not player.Character then return end
+   local head = player.Character:FindFirstChild("Head")
+   if head then
+       local esp = head:FindFirstChild(ESP_NAME)
+       if esp then esp:Destroy() end
+   end
+end
 
 VisualTab:CreateButton({
    Name = "Activer ESP Joueurs",
    Callback = function()
-       for _, v in pairs(game.Players:GetPlayers()) do
-           if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
-               if not v.Character.Head:FindFirstChild("BananaESP") then
-                   local bgui = Instance.new("BillboardGui", v.Character.Head)
-                   bgui.Name = "BananaESP"
-                   bgui.Size = UDim2.new(0,100,0,50)
-                   bgui.MaxDistance = 500
-                   bgui.AlwaysOnTop = true
-                   
-                   local tl = Instance.new("TextLabel", bgui)
-                   tl.Size = UDim2.new(1,0,1,0)
-                   tl.Text = v.Name
-                   tl.TextColor3 = Color3.fromRGB(255, 255, 0)
-                   tl.BackgroundTransparency = 1
-                   tl.Font = Enum.Font.GothamBold
-                   tl.TextSize = 14
-               end
-           end
+       for _, v in pairs(Players:GetPlayers()) do
+           if v ~= lp then createESPForPlayer(v) end
+       end
+       -- Ecoute les nouveaux joueurs / chars
+       Players.PlayerAdded:Connect(function(p) p.CharacterAdded:Connect(function() createESPForPlayer(p) end) end)
+       for _, p in pairs(Players:GetPlayers()) do
+           p.CharacterAdded:Connect(function() createESPForPlayer(p) end)
        end
    end,
 })
@@ -166,11 +209,8 @@ VisualTab:CreateButton({
 VisualTab:CreateButton({
    Name = "Désactiver ESP",
    Callback = function()
-       for _, v in pairs(game.Players:GetPlayers()) do
-           if v.Character and v.Character:FindFirstChild("Head") then
-               local esp = v.Character.Head:FindFirstChild("BananaESP")
-               if esp then esp:Destroy() end
-           end
+       for _, v in pairs(Players:GetPlayers()) do
+           removeESPForPlayer(v)
        end
    end,
 })
@@ -184,43 +224,202 @@ FarmingTab:CreateButton({
    Name = "Teleport à l'île",
    Callback = function()
        pcall(function()
-           if game.Players.LocalPlayer.Character then
-               game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 100, 0)
+           if lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+               lp.Character.HumanoidRootPart.CFrame = CFrame.new(0, 100, 0)
            end
        end)
    end,
 })
 
+-- Auto-Fruit UI
+FarmingTab:CreateToggle({
+   Name = "Auto-Ramasser Fruits",
+   CurrentValue = false,
+   Callback = function(Value)
+      AutoFruit = Value
+   end,
+})
+
+FarmingTab:CreateSlider({
+   Name = "Portée Recherche Fruits (studs)",
+   Range = {50, 1000},
+   CurrentValue = FruitRange,
+   Callback = function(Value)
+      FruitRange = Value
+   end,
+})
+
+FarmingTab:CreateSlider({
+   Name = "Délai Ramassage (ms)",
+   Range = {100, 2000},
+   CurrentValue = FruitPickupDelay * 1000,
+   Callback = function(Value)
+      FruitPickupDelay = Value / 1000
+   end,
+})
+
+FarmingTab:CreateButton({
+   Name = "Ramasser Tous les Fruits (une fois)",
+   Callback = function()
+       spawn(function()
+           pcall(function()
+               if not lp or not lp.Character or not lp.Character:FindFirstChild("HumanoidRootPart") then return end
+               -- Collecte une fois tous les fruits trouvés
+               local hrp = lp.Character.HumanoidRootPart
+               local found = {}
+               -- Cherche des containers usuels
+               local candidates = {}
+
+               if Workspace:FindFirstChild("Fruits") then
+                   for _, f in pairs(Workspace.Fruits:GetChildren()) do table.insert(candidates, f) end
+               end
+               -- fallback: scan workspace for models/parts contenant 'Fruit' dans le nom
+               for _, d in pairs(Workspace:GetDescendants()) do
+                   if d:IsA("Model") and not table.find(candidates, d) and string.find(string.lower(d.Name), "fruit") then
+                       table.insert(candidates, d)
+                   elseif d:IsA("BasePart") and not table.find(candidates, d) and string.find(string.lower(d.Name), "fruit") then
+                       table.insert(candidates, d)
+                   end
+               end
+
+               for _, obj in pairs(candidates) do
+                   if obj and not table.find(found, obj) then
+                       -- get position
+                       local pos = nil
+                       if obj:IsA("Model") then
+                           local primary = obj.PrimaryPart or obj:FindFirstChild("Handle") or obj:FindFirstChildWhichIsA("BasePart")
+                           if primary then pos = primary.Position end
+                       elseif obj:IsA("BasePart") then
+                           pos = obj.Position
+                       end
+                       if pos then
+                           -- Téléporte à proximité pour ramasser
+                           hrp.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+                           table.insert(found, obj)
+                           task.wait(FruitPickupDelay)
+                       end
+                   end
+               end
+           end)
+       end)
+   end,
+})
+
+-- Helper: find fruit models/parts intelligently
+local function findNearbyFruits(range)
+   local fruits = {}
+   -- Première priorité : Workspace.Fruits container
+   if Workspace:FindFirstChild("Fruits") then
+       for _, f in pairs(Workspace.Fruits:GetChildren()) do
+           if f then
+               local pos = nil
+               if f:IsA("Model") then
+                   local primary = f.PrimaryPart or f:FindFirstChild("Handle") or f:FindFirstChildWhichIsA("BasePart")
+                   if primary then pos = primary.Position end
+               elseif f:IsA("BasePart") then
+                   pos = f.Position
+               end
+               if pos and lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                   local dist = (pos - lp.Character.HumanoidRootPart.Position).Magnitude
+                   if dist <= range then
+                       table.insert(fruits, {obj = f, pos = pos, dist = dist})
+                   end
+               end
+           end
+       end
+   end
+
+   -- Scanne workspace pour tout nom contenant "fruit" (fallback)
+   for _, d in pairs(Workspace:GetDescendants()) do
+       if d and (d:IsA("Model") or d:IsA("BasePart")) and string.find(string.lower(d.Name), "fruit") then
+           local pos = nil
+           if d:IsA("Model") then
+               local primary = d.PrimaryPart or d:FindFirstChild("Handle") or d:FindFirstChildWhichIsA("BasePart")
+               if primary then pos = primary.Position end
+           elseif d:IsA("BasePart") then
+               pos = d.Position
+           end
+           if pos and lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+               local dist = (pos - lp.Character.HumanoidRootPart.Position).Magnitude
+               if dist <= range then
+                   table.insert(fruits, {obj = d, pos = pos, dist = dist})
+               end
+           end
+       end
+   end
+
+   -- Trier par distance ascendante
+   table.sort(fruits, function(a,b) return a.dist < b.dist end)
+   return fruits
+end
+
+-- Tente d'utiliser un remote "pickup" si trouvé, sinon téléporte le joueur près du fruit
+local function attemptPickupFruit(obj)
+   pcall(function()
+       -- Cherche des remotes plausibles
+       local remotes = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage
+       local tryNames = {"Pickup", "PickUp", "PickupItem", "Collect", "CollectItem", "PickItem", "GiveFruit", "CollectFruit", "DropPickup"}
+       for _, name in pairs(tryNames) do
+           local r = remotes:FindFirstChild(name)
+           if r then
+               if r:IsA("RemoteEvent") then
+                   pcall(function() r:FireServer(obj) end)
+                   return true
+               elseif r:IsA("RemoteFunction") then
+                   pcall(function() r:InvokeServer(obj) end)
+                   return true
+               end
+           end
+       end
+       -- Si l'objet est un Model, on essaie de trouver sa PrimaryPart
+       local pos = nil
+       if obj:IsA("Model") then
+           local primary = obj.PrimaryPart or obj:FindFirstChild("Handle") or obj:FindFirstChildWhichIsA("BasePart")
+           if primary then pos = primary.Position end
+       elseif obj:IsA("BasePart") then
+           pos = obj.Position
+       end
+       if pos and lp and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+           -- Téléporte le joueur à proximité (léger offset dessus)
+           lp.Character.HumanoidRootPart.CFrame = CFrame.new(pos + Vector3.new(0, 3, 0))
+           return true
+       end
+   end)
+   return false
+end
+
 -- ==========================================
 -- BOUCLE AUTO-FARM AMÉLIORÉE
 -- ==========================================
 spawn(function()
-   while true do 
-       task.wait(0.05)
+   while true do
+       task.wait(0.1)
        if AutoLevel then
            pcall(function()
-               local lp = game.Players.LocalPlayer
-               if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp.Character:FindFirstChild("Humanoid") then
-                   local closestEnemy = nil
-                   local closestDistance = math.huge
-                   
-                   -- Chercher l'ennemi le plus proche
-                   if game.Workspace:FindFirstChild("Enemies") then
-                       for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-                           if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
-                               local distance = (v.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude
-                               if distance < closestDistance and distance < 500 then
-                                   closestDistance = distance
-                                   closestEnemy = v
-                               end
+               local player = lp
+               if not player or not player.Character then return end
+               local hrp = player.Character:FindFirstChild("HumanoidRootPart")
+               local hum = player.Character:FindFirstChildOfClass("Humanoid")
+               if not hrp or not hum or hum.Health <= 0 then return end
+
+               local closestEnemy = nil
+               local closestDistance = math.huge
+
+               if Workspace:FindFirstChild("Enemies") then
+                   for _, v in pairs(Workspace.Enemies:GetChildren()) do
+                       if v and v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                           local distance = (v.HumanoidRootPart.Position - hrp.Position).Magnitude
+                           if distance < closestDistance and distance < 500 then
+                               closestDistance = distance
+                               closestEnemy = v
                            end
                        end
                    end
-                   
-                   -- Se téléporter et attaquer
-                   if closestEnemy then
-                       lp.Character.HumanoidRootPart.CFrame = closestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 0, 3)
-                   end
+               end
+
+               if closestEnemy and closestEnemy:FindFirstChild("HumanoidRootPart") then
+                   local targetCFrame = closestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 2.5, 3)
+                   hrp.CFrame = targetCFrame
                end
            end)
        end
@@ -238,50 +437,29 @@ spawn(function()
            local currentTime = tick()
            if currentTime - lastClick >= ClickSpeed then
                pcall(function()
-                   local lp = game.Players.LocalPlayer
-                   if lp.Character and lp.Character:FindFirstChild("Humanoid") and lp.Character.Humanoid.Health > 0 then
-                       -- Méthode 1: VirtualUser (pour certains jeux)
-                       game:GetService('VirtualUser'):CaptureController()
-                       game:GetService('VirtualUser'):ClickButton1(Vector2.new(640, 360))
-                       
-                       -- Méthode 2: Signal UserInputService
-                       local UserInputService = game:GetService("UserInputService")
-                       UserInputService:SendKeyEvent(true, Enum.KeyCode.Unknown, false)
-                       UserInputService:SendKeyEvent(false, Enum.KeyCode.Unknown, false)
-                   end
-               end)
-               lastClick = currentTime
-           end
-       end
-   end
-end)
+                   if not lp or not lp.Character then return end
+                   local hum = lp.Character:FindFirstChildOfClass("Humanoid")
+                   if not hum or hum.Health <= 0 then return end
 
--- ==========================================
--- BOUCLE BATEAU AUTO
--- ==========================================
-spawn(function()
-    while true do 
-        task.wait(0.5)
-        if AutoBoat then
-            pcall(function()
-                local lp = game.Players.LocalPlayer
-                if lp.Character then
-                    for _, v in pairs(game.Workspace.Boats:GetChildren()) do
-                        if v:FindFirstChild("Owner") and v.Owner.Value == lp.Name then
-                            local seat = v:FindFirstChildOfClass("VehicleSeat")
-                            if seat then
-                                if lp.Character.Humanoid.SeatPart ~= seat then 
-                                    seat:Sit(lp.Character.Humanoid) 
-                                end
-                                local bv = seat:FindFirstChild("BananaVelocity") or Instance.new("BodyVelocity", seat)
-                                bv.Name = "BananaVelocity"
-                                bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                                bv.Velocity = seat.CFrame.LookVector * BoatSpeed
-                            end
-                        end
-                    end
-                end
-            end)
-        end
-    end
-end)
+                   local invoked = false
+                   local remotes = ReplicatedStorage:FindFirstChild("Remotes") or ReplicatedStorage
+                   local commonNames = {"Damage", "Melee", "Attack", "Hit", "Swing", "Combat", "CommF_", "RemoteEvent"}
+                   for _, name in pairs(commonNames) do
+                       local r = remotes:FindFirstChild(name)
+                       if r and r:IsA("RemoteEvent") then
+                           pcall(function() r:FireServer() end)
+                           invoked = true
+                           break
+                       elseif r and r:IsA("RemoteFunction") then
+                           pcall(function() r:InvokeServer() end)
+                           invoked = true
+                           break
+                       end
+                   end
+
+                   if not invoked then
+                       local vu = game:GetService("VirtualUser")
+                       vu:CaptureController()
+                       pcall(function() vu:ClickButton1(Vector2.new(workspace.CurrentCamera.ViewportSize.X/2, workspace.CurrentCamera.ViewportSize.Y/2)) end)
+                   end
+              _*
