@@ -1,27 +1,29 @@
-print("--- CHARGEMENT STUDIO BANANA HUB ---")
+-- STUDIO BANANA HUB - VERSION FORCE
+print("--- INITIALISATION STUDIO BANANA ---")
 
--- 1. Notification pour confirmer que ça marche
-game.StarterGui:SetCore("SendNotification", {
-    Title = "Studio Banana",
-    Text = "Vitesse et Saut activés !",
-    Duration = 5
-})
-
--- 2. Fonction pour que ça marche même après une mort
 local player = game.Players.LocalPlayer
-player.CharacterAppearanceLoaded:Connect(function(char)
-    local hum = char:WaitForChild("Humanoid")
-    hum.WalkSpeed = 100
-    hum.JumpPower = 150
-end)
 
--- 3. Activation immédiate
-if player.Character then
-    local hum = player.Character:FindFirstChild("Humanoid")
-    if hum then
-        hum.WalkSpeed = 100
-        hum.JumpPower = 150
+-- Fonction simple pour booster le personnage
+local function applyBoosts(character)
+    local humanoid = character:WaitForChild("Humanoid", 10)
+    if humanoid then
+        humanoid.WalkSpeed = 100
+        humanoid.JumpPower = 150
+        print("--- BOOSTS APPLIQUÉS AVEC SUCCÈS ---")
     end
 end
 
-print("--- STUDIO BANANA EST OPÉRATIONNEL ---")
+-- Appliquer maintenant
+if player.Character then
+    applyBoosts(player.Character)
+end
+
+-- Appliquer à chaque fois que tu réapparais (après une mort)
+player.CharacterAdded:Connect(applyBoosts)
+
+-- Notification visuelle en jeu
+game.StarterGui:SetCore("SendNotification", {
+    Title = "Studio Banana",
+    Text = "Vitesse: 100 | Saut: 150",
+    Duration = 10
+})
