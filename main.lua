@@ -1,8 +1,8 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub | PRO V12",
-   LoadingTitle = "Optimisation Cimetière...",
+   Name = "🍌 Studio Banana Hub | V13",
+   LoadingTitle = "Chargement du Smooth Farm...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
@@ -22,12 +22,13 @@ Tab:CreateSlider({
    end,
 })
 
+-- BOUTON SAUT INFINI (Désactivable)
 local InfJump = false
 Tab:CreateToggle({
    Name = "Saut Infini",
    CurrentValue = false,
    Callback = function(Value)
-      InfJump = Value -- Désactive ou active le saut ici
+      InfJump = Value
    end,
 })
 
@@ -37,39 +38,48 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
    end
 end)
 
--- ONGLET AUTO-LEVEL (MODE CIMETIÈRE)
-local FarmTab = Window:CreateTab("🌾 Auto Farm")
+-- ONGLET AUTO-LEVEL (STYLE RED HUB)
+local FarmTab = Window:CreateTab("🌾 Auto Level")
 
 local AutoLevel = false
 FarmTab:CreateToggle({
-   Name = "Auto-Farm (Stay Above)",
+   Name = "Smooth Auto-Farm (Level 2050+)",
    CurrentValue = false,
    Callback = function(Value)
       AutoLevel = Value
    end,
 })
 
--- Boucle de Farm style Solix (Correction Position)
+-- FONCTION DE MOUVEMENT FLUIDE (TWEEN)
+local function TweenTo(targetCFrame)
+    local char = game.Players.LocalPlayer.Character
+    if char and char:FindFirstChild("HumanoidRootPart") then
+        local tweenService = game:GetService("TweenService")
+        local info = TweenInfo.new((char.HumanoidRootPart.Position - targetCFrame.Position).Magnitude / 100, Enum.EasingStyle.Linear)
+        local tween = tweenService:Create(char.HumanoidRootPart, info, {CFrame = targetCFrame})
+        tween:Play()
+        return tween
+    end
+end
+
+-- BOUCLE DE FARM
 spawn(function()
    while true do
-      task.wait(0.05)
+      task.wait(0.1)
       if AutoLevel then
          pcall(function()
             local lp = game.Players.LocalPlayer
-            -- On cherche les ennemis (Squelettes, etc.)
             for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-               if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 and v:FindFirstChild("HumanoidRootPart") then
-                  -- POSITION : On se fixe à 7 studs au-dessus d'eux
-                  lp.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 7, 0)
+               if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                  -- On se place au-dessus de l'ennemi en douceur
+                  local targetPos = v.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
+                  lp.Character.HumanoidRootPart.CFrame = targetPos
                   
-                  -- ANTI-CHUTE : On bloque la gravité pour ne pas glisser au sol
-                  lp.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
-                  
-                  -- ATTAQUE
+                  -- On attaque
                   local VirtualUser = game:GetService('VirtualUser')
                   VirtualUser:CaptureController()
                   VirtualUser:ClickButton1(Vector2.new(0,0))
-                  break 
+                  break
                end
             end
          end)
