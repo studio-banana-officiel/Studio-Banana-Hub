@@ -1,13 +1,13 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub | Blox Fruits",
-   LoadingTitle = "Projet Viral : Studio Banana",
+   Name = "🍌 Studio Banana Hub | Pro Farm",
+   LoadingTitle = "Optimisation style Solix...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
 
--- ONGLET JOUEUR (Vitesse + Saut)
+-- ONGLET JOUEUR (Vitesse + Saut Infini)
 local Tab = Window:CreateTab("🏃 Joueur")
 
 Tab:CreateSlider({
@@ -22,7 +22,7 @@ Tab:CreateSlider({
 
 local InfJump = false
 Tab:CreateToggle({
-   Name = "Saut Infini",
+   Name = "Activer le Saut Infini",
    CurrentValue = false,
    Callback = function(Value)
       InfJump = Value
@@ -36,38 +36,46 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
    end
 end)
 
--- ONGLET AUTO-LEVEL (Attaque forcée)
-local FarmTab = Window:CreateTab("🌾 Auto Level")
+-- ONGLET AUTO-FARM (Inspiration Solix)
+local FarmTab = Window:CreateTab("🌾 Auto Farm")
 
-local AutoLevel = false
+local AutoFarm = false
 FarmTab:CreateToggle({
-   Name = "Activer Auto-Farm",
+   Name = "Auto-Farm (Level + Attaque)",
    CurrentValue = false,
    Callback = function(Value)
-      AutoLevel = Value
+      AutoFarm = Value
    end,
 })
 
--- Boucle Auto-Level
+-- Système de Farm Intelligent
 spawn(function()
    while true do
-      task.wait(0.1)
-      if AutoLevel then
+      task.wait()
+      if AutoFarm then
          pcall(function()
-            -- Simule un clic pour attaquer avec ton arme équipée
-            local VirtualUser = game:GetService('VirtualUser')
-            VirtualUser:CaptureController()
-            VirtualUser:ClickButton1(Vector2.new(0,0))
+            local player = game.Players.LocalPlayer
+            for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
+                    -- Téléportation au-dessus de l'ennemi (Comme Solix)
+                    player.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 10, 0)
+                    
+                    -- Attaque automatique
+                    local VirtualUser = game:GetService('VirtualUser')
+                    VirtualUser:CaptureController()
+                    VirtualUser:ClickButton1(Vector2.new(0,0))
+                end
+            end
          end)
       end
    end
 end)
 
--- ONGLET VISUEL (Avec bouton Désactiver)
+-- ONGLET VISUEL (Avec Option de Nettoyage)
 local Tab2 = Window:CreateTab("👁️ Visuel")
 
 Tab2:CreateButton({
-   Name = "Activer ESP (Noms)",
+   Name = "Activer ESP",
    Callback = function()
        for _, v in pairs(game.Players:GetPlayers()) do
            if v ~= game.Players.LocalPlayer and v.Character and v.Character:FindFirstChild("Head") then
