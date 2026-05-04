@@ -1,11 +1,16 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "🍌 Studio Banana Hub | V13",
-   LoadingTitle = "Chargement du Smooth Farm...",
+   Name = "🍌 Studio Banana Hub | PRO V17",
+   LoadingTitle = "Intégration Auto-Clicker...",
    LoadingSubtitle = "par studio-banana-officiel",
    ConfigurationSaving = { Enabled = false }
 })
+
+-- VARIABLES
+local OriginalPos = nil
+local AutoLevel = false
+local InfJump = false
 
 -- ONGLET JOUEUR
 local Tab = Window:CreateTab("🏃 Joueur")
@@ -13,7 +18,6 @@ local Tab = Window:CreateTab("🏃 Joueur")
 Tab:CreateSlider({
    Name = "Vitesse",
    Range = {16, 300},
-   Increment = 1,
    CurrentValue = 100,
    Callback = function(Value)
       if game.Players.LocalPlayer.Character then
@@ -22,65 +26,65 @@ Tab:CreateSlider({
    end,
 })
 
--- BOUTON SAUT INFINI (Désactivable)
-local InfJump = false
 Tab:CreateToggle({
    Name = "Saut Infini",
    CurrentValue = false,
-   Callback = function(Value)
-      InfJump = Value
-   end,
+   Callback = function(Value) InfJump = Value end,
 })
 
+-- GESTION SAUT
 game:GetService("UserInputService").JumpRequest:Connect(function()
    if InfJump and game.Players.LocalPlayer.Character then
       game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
    end
 end)
 
--- ONGLET AUTO-LEVEL (STYLE RED HUB)
+-- ONGLET AUTO-LEVEL
 local FarmTab = Window:CreateTab("🌾 Auto Level")
 
-local AutoLevel = false
 FarmTab:CreateToggle({
-   Name = "Smooth Auto-Farm (Level 2050+)",
+   Name = "Auto-Farm + Auto-Clicker",
    CurrentValue = false,
    Callback = function(Value)
       AutoLevel = Value
+      if Value then
+          if game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+              OriginalPos = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+          end
+      else
+          -- Retour forcé à la position initiale
+          task.wait(0.2)
+          if OriginalPos and game.Players.LocalPlayer.Character then
+              game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OriginalPos
+          end
+      end
    end,
 })
 
--- FONCTION DE MOUVEMENT FLUIDE (TWEEN)
-local function TweenTo(targetCFrame)
-    local char = game.Players.LocalPlayer.Character
-    if char and char:FindFirstChild("HumanoidRootPart") then
-        local tweenService = game:GetService("TweenService")
-        local info = TweenInfo.new((char.HumanoidRootPart.Position - targetCFrame.Position).Magnitude / 100, Enum.EasingStyle.Linear)
-        local tween = tweenService:Create(char.HumanoidRootPart, info, {CFrame = targetCFrame})
-        tween:Play()
-        return tween
-    end
-end
-
--- BOUCLE DE FARM
+-- BOUCLE DE COMBAT & AUTO-CLICKER
 spawn(function()
    while true do
       task.wait(0.1)
       if AutoLevel then
          pcall(function()
             local lp = game.Players.LocalPlayer
+            local foundEnemy = false
+            
+            -- Détection et TP
             for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
                if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                  -- On se place au-dessus de l'ennemi en douceur
-                  local targetPos = v.HumanoidRootPart.CFrame * CFrame.new(0, 8, 0)
-                  lp.Character.HumanoidRootPart.CFrame = targetPos
-                  
-                  -- On attaque
-                  local VirtualUser = game:GetService('VirtualUser')
-                  VirtualUser:CaptureController()
-                  VirtualUser:ClickButton1(Vector2.new(0,0))
+                  lp.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 9, 0)
+                  lp.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+                  foundEnemy = true
                   break
                end
+            end
+            
+            -- AUTO-CLICKER (S'active si l'Auto-Farm est ON)
+            if foundEnemy then
+                local VirtualUser = game:GetService('VirtualUser')
+                VirtualUser:CaptureController()
+                VirtualUser:ClickButton1(Vector2.new(0,0))
             end
          end)
       end
@@ -99,6 +103,7 @@ Tab2:CreateButton({
                bgui.Size = UDim2.new(0,100,0,50)
                bgui.AlwaysOnTop = true
                local tl = Instance.new("TextLabel", bgui)
+               tl.Size = UDim2.new(1,0,1,0)
                tl.Text = v.Name
                tl.TextColor3 = Color3.fromRGB(255, 255, 0)
                tl.BackgroundTransparency = 1
