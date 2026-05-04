@@ -12,8 +12,10 @@ local OriginalPos = nil
 local AutoLevel = false
 local InfJump = false
 local AutoBoat = false
+local AutoClick = false
 local SelectedBoat = "Dinghy"
 local BoatSpeed = 150
+local ClickSpeed = 0.1
 
 -- ==========================================
 -- 🏃 ONGLET JOUEUR (FIX SAUT INFINI)
@@ -44,7 +46,7 @@ game:GetService("UserInputService").JumpRequest:Connect(function()
    if InfJump then
       local char = game.Players.LocalPlayer.Character
       if char and char:FindFirstChildOfClass("Humanoid") then
-         char:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+         char:FindFirstChildOfClass("Humanoid"):ChangeState(Enum.HumanoidStateType.Jumping)
       end
    end
 end)
@@ -57,17 +59,18 @@ local BoatTab = Window:CreateTab("⛵ Bateau")
 BoatTab:CreateDropdown({
    Name = "Choisir le Bateau",
    Options = {"Dinghy", "Sloop", "Brigantine", "Grand Enforcer"},
-   CurrentOption = {"Dinghy"},
-   MultipleOptions = false,
+   CurrentOption = "Dinghy",
    Callback = function(Option) 
-      SelectedBoat = Option[1] 
+      SelectedBoat = Option 
    end,
 })
 
 BoatTab:CreateButton({
    Name = "Faire apparaître le bateau",
    Callback = function()
-       game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", SelectedBoat)
+       pcall(function()
+           game:GetService("ReplicatedStorage").Remotes.CommF_:InvokeServer("BuyBoat", SelectedBoat)
+       end)
    end,
 })
 
@@ -85,7 +88,7 @@ BoatTab:CreateToggle({
 local FarmTab = Window:CreateTab("🌾 Auto Level")
 
 FarmTab:CreateToggle({
-   Name = "Auto-Farm + Auto-Clicker",
+   Name = "Auto-Farm (Repositionnement)",
    CurrentValue = false,
    Callback = function(Value)
       AutoLevel = Value
@@ -95,8 +98,27 @@ FarmTab:CreateToggle({
           end
       else
           task.wait(0.2)
-          if OriginalPos then game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OriginalPos end
+          if OriginalPos and game.Players.LocalPlayer.Character then 
+              game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = OriginalPos 
+          end
       end
+   end,
+})
+
+FarmTab:CreateToggle({
+   Name = "Auto-Clicker",
+   CurrentValue = false,
+   Callback = function(Value) 
+      AutoClick = Value 
+   end,
+})
+
+FarmTab:CreateSlider({
+   Name = "Vitesse Click (ms)",
+   Range = {10, 500},
+   CurrentValue = 100,
+   Callback = function(Value)
+      ClickSpeed = Value / 1000
    end,
 })
 
@@ -114,13 +136,13 @@ Tab2:CreateButton({
                    local bgui = Instance.new("BillboardGui", v.Character.Head)
                    bgui.Name = "BananaESP"
                    bgui.Size = UDim2.new(0,100,0,50)
+                   bgui.MaxDistance = math.huge
                    bgui.AlwaysOnTop = true
                    local tl = Instance.new("TextLabel", bgui)
                    tl.Size = UDim2.new(1,0,1,0)
                    tl.Text = v.Name
                    tl.TextColor3 = Color3.fromRGB(255, 255, 0)
                    tl.BackgroundTransparency = 1
-                   tl.Parent = bgui
                end
            end
        end
@@ -143,19 +165,24 @@ Tab2:CreateButton({
 -- BOUCLE NAVIGATION BATEAU (ARRIÈRE-PLAN)
 -- ==========================================
 spawn(function()
-    while true do task.wait(0.5)
+    while true do 
+        task.wait(0.5)
         if AutoBoat then
             pcall(function()
                 local lp = game.Players.LocalPlayer
-                for _, v in pairs(game.Workspace.Boats:GetChildren()) do
-                    if v:FindFirstChild("Owner") and v.Owner.Value == lp.Name then
-                        local seat = v:FindFirstChildOfClass("VehicleSeat")
-                        if seat then
-                            if lp.Character.Humanoid.SeatPart ~= seat then seat:Sit(lp.Character.Humanoid) end
-                            local bv = seat:FindFirstChild("BananaVelocity") or Instance.new("BodyVelocity", seat)
-                            bv.Name = "BananaVelocity"
-                            bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-                            bv.Velocity = seat.CFrame.LookVector * BoatSpeed
+                if lp.Character then
+                    for _, v in pairs(game.Workspace.Boats:GetChildren()) do
+                        if v:FindFirstChild("Owner") and v.Owner.Value == lp.Name then
+                            local seat = v:FindFirstChildOfClass("VehicleSeat")
+                            if seat then
+                                if lp.Character.Humanoid.SeatPart ~= seat then 
+                                    seat:Sit(lp.Character.Humanoid) 
+                                end
+                                local bv = seat:FindFirstChild("BananaVelocity") or Instance.new("BodyVelocity", seat)
+                                bv.Name = "BananaVelocity"
+                                bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+                                bv.Velocity = seat.CFrame.LookVector * BoatSpeed
+                            end
                         end
                     end
                 end
@@ -164,20 +191,54 @@ spawn(function()
     end
 end)
 
--- BOUCLE AUTO-FARM (ARRIÈRE-PLAN)
+-- ==========================================
+-- BOUCLE AUTO-FARM AMÉLIORÉE (ARRIÈRE-PLAN)
+-- ==========================================
 spawn(function()
-   while true do task.wait(0.1)
-      if AutoLevel then
-         pcall(function()
-            for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
-               if v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                  game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0, 9, 0)
-                  game:GetService('VirtualUser'):CaptureController()
-                  game:GetService('VirtualUser'):ClickButton1(Vector2.new(0,0))
-                  break
+   while true do 
+       task.wait(0.1)
+       if AutoLevel then
+           pcall(function()
+               local lp = game.Players.LocalPlayer
+               if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") and lp.Character:FindFirstChild("Humanoid") then
+                   local closestEnemy = nil
+                   local closestDistance = math.huge
+                   
+                   -- Trouver l'ennemi le plus proche
+                   for _, v in pairs(game.Workspace.Enemies:GetChildren()) do
+                       if v:FindFirstChild("Humanoid") and v:FindFirstChild("HumanoidRootPart") and v.Humanoid.Health > 0 then
+                           local distance = (v.HumanoidRootPart.Position - lp.Character.HumanoidRootPart.Position).Magnitude
+                           if distance < closestDistance then
+                               closestDistance = distance
+                               closestEnemy = v
+                           end
+                       end
+                   end
+                   
+                   -- Se téléporter à l'ennemi
+                   if closestEnemy then
+                       lp.Character.HumanoidRootPart.CFrame = closestEnemy.HumanoidRootPart.CFrame * CFrame.new(0, 3, 3)
+                   end
                end
-            end
-         end)
-      end
+           end)
+       end
+   end
+end)
+
+-- ==========================================
+-- BOUCLE AUTO-CLICKER (ARRIÈRE-PLAN)
+-- ==========================================
+spawn(function()
+   while true do
+       task.wait(ClickSpeed)
+       if AutoClick then
+           pcall(function()
+               local lp = game.Players.LocalPlayer
+               if lp.Character then
+                   game:GetService('VirtualUser'):CaptureController()
+                   game:GetService('VirtualUser'):ClickButton1(Vector2.new(0,0))
+               end
+           end)
+       end
    end
 end)
